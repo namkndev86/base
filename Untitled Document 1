@@ -41,3 +41,44 @@ bash
 npm run start:dev --workspace=@platform/tenant-service
 Khi tất cả đã khởi chạy, tài liệu Swagger của API Gateway sẽ có sẵn tại địa chỉ: http://localhost:3000/docs.
 
+
+Cách 1: Chạy toàn bộ hệ thống bằng Docker (Khuyên dùng - Đơn giản nhất)
+Cách này chỉ yêu cầu cài đặt sẵn Docker và Docker Compose trên máy, không cần cấu hình Node.js hay cài đặt thư viện trên máy chủ (host).
+
+Di chuyển vào thư mục dự án và chạy duy nhất một lệnh:
+
+bash
+docker compose up -d --build
+Lệnh này sẽ tự động tải các cơ sở dữ liệu/hạ tầng, đồng thời build code các microservice thành container và kết nối chúng lại.
+
+Kiểm tra trạng thái các container:
+
+bash
+docker compose ps
+Truy cập các dịch vụ:
+
+API Gateway (Swagger): http://localhost:3000/docs
+Grafana Dashboard: http://localhost:3100 (Tài khoản: admin / admin)
+Jaeger Tracing: http://localhost:16686
+Cách 2: Chạy hạ tầng bằng Docker, chạy Microservices trên máy local (Dành cho Development)
+Cách này thích hợp khi nhà phát triển muốn chỉnh sửa code trực tiếp và cần tính năng hot-reload (tự động restart khi lưu file).
+
+Chỉ khởi chạy hạ tầng (Postgres, Redis, NATS, MinIO, Grafana,...):
+
+bash
+docker compose -f infrastructure/docker/docker-compose.yml up -d
+Cài đặt thư viện tại thư mục gốc monorepo:
+
+bash
+npm install
+Build các gói thư viện dùng chung (Shared Packages):
+
+bash
+npm run build:all
+Khởi chạy các microservice bằng lệnh npm workspaces (mỗi service chạy ở 1 terminal hoặc cửa sổ riêng):
+
+API Gateway: npm run start:dev --workspace=@platform/api-gateway
+Identity Service: npm run start:dev --workspace=@platform/identity-service
+Authorization Service: npm run start:dev --workspace=@platform/authorization-service
+Tenant Service: npm run start:dev --workspace=@platform/tenant-service
+
