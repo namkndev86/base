@@ -1,0 +1,64 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Role {
+  id          String       @id @default(uuid())
+  name        String       @unique
+  description String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  policies    Policy[]
+  users       UserRole[]
+}
+
+model Permission {
+  id          String   @id @default(uuid())
+  name        String   @unique // e.g. "user:create", "tenant:read"
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Resource {
+  id          String   @id @default(uuid())
+  name        String   @unique // e.g. "document", "financial-records"
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Policy {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  effect      String   // "ALLOW" or "DENY"
+  actions     String[] // e.g. ["create", "read", "update"]
+  resources   String[] // e.g. ["*"] or ["document"]
+  rules       Json?    // ABAC rule conditions (e.g. { "tenantId": "user.tenantId" })
+  roleId      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  role        Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@index([roleId])
+}
+
+model UserRole {
+  id        String   @id @default(uuid())
+  userId    String
+  roleId    String
+  tenantId  String?  // Nullable if user-role is global or tenant-scoped
+  createdAt DateTime @default(now())
+
+  role      Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId, tenantId])
+  @@index([userId])
+}

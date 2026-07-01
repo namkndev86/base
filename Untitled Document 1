@@ -1,0 +1,43 @@
+pnpm run build --workspace=@platform/shared-protobuf
+pnpm run build --workspace=@platform/shared-contracts
+pnpm run build --workspace=@platform/shared-common
+pnpm run build --workspace=@platform/shared-sdk
+
+Bước 1: Khởi động các dịch vụ Hạ tầng (Databases, Message Broker, Observability)
+Di chuyển vào thư mục hạ tầng Docker và khởi động các container (PostgreSQL, Redis, NATS, MinIO, Elasticsearch, Prometheus, Grafana, Jaeger):
+
+bash
+cd infrastructure/docker
+docker compose up -d
+Bước 2: Cài đặt Dependencies (nếu chưa cài đặt)
+Chạy lệnh cài đặt tại thư mục gốc của monorepo:
+
+bash
+npm install
+Bước 3: Biên dịch (Build) các thư viện dùng chung (Shared Packages)
+Do các microservices phụ thuộc vào code đã build của các gói shared, bạn cần build các thư viện chung trước:
+
+bash
+npm run build --workspace=@platform/shared-protobuf
+npm run build --workspace=@platform/shared-contracts
+npm run build --workspace=@platform/shared-common
+npm run build --workspace=@platform/shared-sdk
+(Hoặc dùng lệnh build toàn bộ dự án: npm run build:all)
+
+Bước 4: Khởi chạy các Microservices ở chế độ Development
+Vì đây là cấu trúc Monorepo dùng npm workspaces, bạn có thể mở các terminal riêng biệt để chạy từng service:
+
+Khởi chạy API Gateway (Port 3000):
+bash
+npm run start:dev --workspace=@platform/api-gateway
+Khởi chạy Identity Service (Port 3001, gRPC 50051):
+bash
+npm run start:dev --workspace=@platform/identity-service
+Khởi chạy Authorization Service (Port 3002, gRPC 50052):
+bash
+npm run start:dev --workspace=@platform/authorization-service
+Khởi chạy Tenant Service (Port 3003, gRPC 50053):
+bash
+npm run start:dev --workspace=@platform/tenant-service
+Khi tất cả đã khởi chạy, tài liệu Swagger của API Gateway sẽ có sẵn tại địa chỉ: http://localhost:3000/docs.
+

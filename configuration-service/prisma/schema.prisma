@@ -1,0 +1,21 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Configuration {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  value       String
+  tenantId    String?  // Global if null, else tenant-scoped override
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([key, tenantId])
+  @@index([tenantId])
+}

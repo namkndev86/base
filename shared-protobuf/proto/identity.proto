@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package identity;
+
+service IdentityService {
+  rpc ValidateToken (ValidateTokenRequest) returns (ValidateTokenResponse);
+  rpc GetUser (GetUserRequest) returns (GetUserResponse);
+}
+
+message ValidateTokenRequest {
+  string accessToken = 1;
+}
+
+message ValidateTokenResponse {
+  bool isValid = 1;
+  string userId = 2;
+  string tenantId = 3;
+  repeated string roles = 4;
+  repeated string permissions = 5;
+  string email = 6;
+}
+
+message GetUserRequest {
+  string userId = 1;
+}
+
+message GetUserResponse {
+  string userId = 1;
+  string email = 2;
+  string tenantId = 3;
+  repeated string roles = 4;
+  bool isActive = 5;
+}

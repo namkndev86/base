@@ -1,0 +1,110 @@
+services:
+  # 1. PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: platform-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_MULTIPLE_DATABASES=identity_service,authorization_service,tenant_service,audit_service,configuration_service,feature_flag_service
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./postgres-init.sh:/docker-entrypoint-initdb.d/postgres-init.sh
+    networks:
+      - platform-network
+
+  # 2. Redis Cache & Queues
+  redis:
+    image: redis:7-alpine
+    container_name: platform-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    networks:
+      - platform-network
+
+  # 3. NATS Message Broker
+  nats:
+    image: nats:2.9-alpine
+    container_name: platform-nats
+    ports:
+      - "4222:4222"
+      - "8222:8222" # Management port
+    networks:
+      - platform-network
+
+  # 4. MinIO S3 Compatible Storage
+  minio:
+    image: minio/minio:latest
+    container_name: platform-minio
+    ports:
+      - "9000:9000" # S3 API
+      - "9001:9001" # Web UI
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+    command: server /data --console-address ":9001"
+    volumes:
+      - miniodata:/data
+    networks:
+      - platform-network
+
+  # 5. Elasticsearch Search Engine
+  elasticsearch:
+    image: elasticsearch:8.7.1
+    container_name: platform-elasticsearch
+    ports:
+      - "9200:9200"
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    volumes:
+      - elasticdata:/usr/share/elasticsearch/data
+    networks:
+      - platform-network
+
+  # 6. Jaeger Distributed Tracing
+  jaeger:
+    image: jaegertracing/all-in-one:1.45
+    container_name: platform-jaeger
+    ports:
+      - "16686:16686" # Web UI
+      - "4317:4317"   # OTLP gRPC receiver
+    networks:
+      - platform-network
+
+  # 7. Prometheus Metrics Collection
+  prometheus:
+    image: prom/prometheus:v2.44.0
+    container_name: platform-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - platform-network
+
+  # 8. Grafana Observability Dashboard
+  grafana:
+    image: grafana/grafana:9.5.2
+    container_name: platform-grafana
+    ports:
+      - "3100:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    networks:
+      - platform-network
+
+volumes:
+  pgdata:
+  redisdata:
+  miniodata:
+  elasticdata:
+
+networks:
+  platform-network:
+    driver: bridge

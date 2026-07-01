@@ -1,0 +1,18 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model FeatureFlag {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  isEnabled   Boolean  @default(false)
+  rolloutPct  Int      @default(0) // 0 to 100 percentage rollout
+  rules       Json?    // Targeting rules e.g., userIds or tenants
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

@@ -1,0 +1,85 @@
+stages:
+  - lint
+  - test
+  - build
+  - docker-build
+
+variables:
+  DOCKER_DRIVER: overlay2
+  DOCKER_TLS_CERTDIR: "/certs"
+
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    - .npm/
+
+before_script:
+  - npm ci --cache .npm --prefer-offline
+
+# ----------------- LINT STAGE -----------------
+lint:shared:
+  stage: lint
+  script:
+    - npm run lint --prefix shared-common
+    - npm run lint --prefix shared-contracts
+    - npm run lint --prefix shared-sdk
+
+lint:services:
+  stage: lint
+  script:
+    - npm run lint --prefix api-gateway
+    - npm run lint --prefix identity-service
+    - npm run lint --prefix authorization-service
+    - npm run lint --prefix tenant-service
+
+# ----------------- TEST STAGE -----------------
+test:services:
+  stage: test
+  script:
+    - npm run test --prefix identity-service
+    - npm run test --prefix authorization-service
+    - npm run test --prefix tenant-service
+
+# ----------------- BUILD STAGE -----------------
+build:shared:
+  stage: build
+  script:
+    - npm run build --prefix shared-protobuf
+    - npm run build --prefix shared-common
+    - npm run build --prefix shared-contracts
+    - npm run build --prefix shared-sdk
+
+build:services:
+  stage: build
+  script:
+    - npm run build --prefix api-gateway
+    - npm run build --prefix identity-service
+    - npm run build --prefix authorization-service
+    - npm run build --prefix tenant-service
+
+# ----------------- DOCKER BUILD STAGE -----------------
+.docker_template:
+  image: docker:20.10.16
+  services:
+    - docker:20.10.16-dind
+  stage: docker-build
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+
+docker:api-gateway:
+  extends: .docker_template
+  script:
+    - docker build -t $CI_REGISTRY_IMAGE/api-gateway:$CI_COMMIT_SHA api-gateway/
+    - docker push $CI_REGISTRY_IMAGE/api-gateway:$CI_COMMIT_SHA
+  only:
+    changes:
+      - api-gateway/**/*
+
+docker:identity-service:
+  extends: .docker_template
+  script:
+    - docker build -t $CI_REGISTRY_IMAGE/identity-service:$CI_COMMIT_SHA identity-service/
+    - docker push $CI_REGISTRY_IMAGE/identity-service:$CI_COMMIT_SHA
+  only:
+    changes:
+      - identity-service/**/*

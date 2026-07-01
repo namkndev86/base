@@ -1,0 +1,34 @@
+{
+  "name": "@platform/root",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "shared-common",
+    "shared-contracts",
+    "shared-protobuf",
+    "shared-sdk",
+    "api-gateway",
+    "identity-service",
+    "authorization-service",
+    "tenant-service",
+    "notification-service",
+    "file-service",
+    "audit-service",
+    "search-service",
+    "scheduler-service",
+    "configuration-service",
+    "feature-flag-service",
+    "workflow-service",
+    "integration-service"
+  ],
+  "scripts": {
+    "bootstrap": "npm install",
+    "build:all": "npm run build --workspaces --if-present"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6"
+  },
+  "allowScripts": {
+    "@nestjs/core": false
+  }
+}

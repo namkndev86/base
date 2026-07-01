@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package tenant;
+
+service TenantService {
+  rpc GetTenant (GetTenantRequest) returns (GetTenantResponse);
+  rpc ValidateTenant (ValidateTenantRequest) returns (ValidateTenantResponse);
+}
+
+message GetTenantRequest {
+  string tenantId = 1;
+}
+
+message GetTenantResponse {
+  string tenantId = 1;
+  string name = 2;
+  string subdomain = 3;
+  string status = 4;
+}
+
+message ValidateTenantRequest {
+  string subdomain = 1;
+}
+
+message ValidateTenantResponse {
+  bool isValid = 1;
+  string tenantId = 2;
+}

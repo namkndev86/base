@@ -1,0 +1,22 @@
+{
+  "name": "@platform/shared-sdk",
+  "version": "1.0.0",
+  "description": "Shared package shared-sdk",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@nestjs/common": "^10.0.0",
+    "@nestjs/core": "^10.0.0",
+    "nats": "^2.15.0",
+    "@grpc/grpc-js": "^1.8.15",
+    "@grpc/proto-loader": "^0.7.7",
+    "@nestjs/platform-express": "^10.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

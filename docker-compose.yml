@@ -1,0 +1,194 @@
+services:
+  # ==========================================
+  # 1. DOWNSTREAM MICROSERVICES
+  # ==========================================
+  api-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: api-gateway
+    container_name: api-gateway
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - IDENTITY_SERVICE_URL=http://identity-service:3001
+      - AUTHORIZATION_SERVICE_URL=http://authorization-service:3002
+      - TENANT_SERVICE_URL=http://tenant-service:3003
+      - IDENTITY_GRPC_URL=identity-service:50051
+    depends_on:
+      - identity-service
+      - authorization-service
+      - tenant-service
+    networks:
+      - platform-network
+
+  identity-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: identity-service
+    container_name: identity-service
+    ports:
+      - "3001:3001"
+      - "50051:50051"
+    environment:
+      - PORT=3001
+      - GRPC_URL=0.0.0.0:50051
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/identity_service?schema=public
+      - NATS_URL=nats://nats:4222
+      - JWT_SECRET=super-secret-platform-key
+    depends_on:
+      - postgres
+      - nats
+    networks:
+      - platform-network
+
+  authorization-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: authorization-service
+    container_name: authorization-service
+    ports:
+      - "3002:3002"
+      - "50052:50052"
+    environment:
+      - PORT=3002
+      - GRPC_URL=0.0.0.0:50052
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/authorization_service?schema=public
+      - NATS_URL=nats://nats:4222
+    depends_on:
+      - postgres
+      - nats
+    networks:
+      - platform-network
+
+  tenant-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: tenant-service
+    container_name: tenant-service
+    ports:
+      - "3003:3003"
+      - "50053:50053"
+    environment:
+      - PORT=3003
+      - GRPC_URL=0.0.0.0:50053
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/tenant_service?schema=public
+      - NATS_URL=nats://nats:4222
+    depends_on:
+      - postgres
+      - nats
+    networks:
+      - platform-network
+
+  # ==========================================
+  # 2. INFRASTRUCTURE & BACKING STORES
+  # ==========================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: platform-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_MULTIPLE_DATABASES=identity_service,authorization_service,tenant_service,audit_service,configuration_service,feature_flag_service
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./infrastructure/docker/postgres-init.sh:/docker-entrypoint-initdb.d/postgres-init.sh
+    networks:
+      - platform-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: platform-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    networks:
+      - platform-network
+
+  nats:
+    image: nats:2.9-alpine
+    container_name: platform-nats
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+    networks:
+      - platform-network
+
+  minio:
+    image: minio/minio:latest
+    container_name: platform-minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+    command: server /data --console-address ":9001"
+    volumes:
+      - miniodata:/data
+    networks:
+      - platform-network
+
+  elasticsearch:
+    image: elasticsearch:8.7.1
+    container_name: platform-elasticsearch
+    ports:
+      - "9200:9200"
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    volumes:
+      - elasticdata:/usr/share/elasticsearch/data
+    networks:
+      - platform-network
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.45
+    container_name: platform-jaeger
+    ports:
+      - "16686:16686"
+      - "4317:4317"
+    networks:
+      - platform-network
+
+  prometheus:
+    image: prom/prometheus:v2.44.0
+    container_name: platform-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./infrastructure/docker/prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - platform-network
+
+  grafana:
+    image: grafana/grafana:9.5.2
+    container_name: platform-grafana
+    ports:
+      - "3100:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    networks:
+      - platform-network
+
+volumes:
+  pgdata:
+  redisdata:
+  miniodata:
+  elasticdata:
+
+networks:
+  platform-network:
+    driver: bridge

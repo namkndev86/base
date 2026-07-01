@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package authorization;
+
+service AuthorizationService {
+  rpc CheckPermission (CheckPermissionRequest) returns (CheckPermissionResponse);
+  rpc GetUserPermissions (GetUserPermissionsRequest) returns (GetUserPermissionsResponse);
+}
+
+message CheckPermissionRequest {
+  string userId = 1;
+  string permission = 2;
+  string tenantId = 3;
+}
+
+message CheckPermissionResponse {
+  bool isAllowed = 1;
+}
+
+message GetUserPermissionsRequest {
+  string userId = 1;
+  string tenantId = 2;
+}
+
+message GetUserPermissionsResponse {
+  repeated string permissions = 1;
+}
